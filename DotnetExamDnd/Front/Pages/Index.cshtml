@@ -1,0 +1,158 @@
+﻿@page
+@using Front.Helpers
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model IndexModel
+@{
+    ViewData["Title"] = "Encounter";
+}
+
+<div class="d-flex flex-wrap justify-content-between m-5">
+    <div class="card">
+        <div class="card-header">
+            <h3>Character</h3>
+        </div>
+        <form method="post">
+            <div class="card-body">
+                <div class="mb-3">
+                    <p>
+                        @Html.LabelFor(model => model.Player.Name)
+                        @Html.EditorFor(model => model.Player.Name)
+                    </p>
+                    @Html.Validation(model => model.Player.Name)
+                </div>
+                <div class="mb-3">
+                    <p>
+                        @Html.LabelFor(model => model.Player.HitPoints, "HP")
+                        @Html.EditorFor(model => model.Player.HitPoints, new { htmlAttributes = new { size = "3" } })
+                        /
+                        @Html.LabelFor(model => model.Player.ArmorClass, "AC")
+                        @Html.EditorFor(model => model.Player.ArmorClass, new { htmlAttributes = new { size = "3" } })
+                    </p>
+                    @Html.Validation(model => model.Player.HitPoints)
+                    @Html.Validation(model => model.Player.ArmorClass)
+                </div>
+                <div class="mb-3">
+                    <label>Attack</label>
+                    <p>
+                        (1d20 + @Html.EditorFor(model => model.Player.AttackModifier, new { htmlAttributes = new { size = "3" } }))
+                        × @Html.EditorFor(model => model.Player.AttacksPerRound, new { htmlAttributes = new { size = "3", value = 2 } })
+                    </p>
+                    @Html.Validation(model => model.Player.AttackModifier)
+                    @Html.Validation(model => model.Player.AttacksPerRound)
+                </div>
+                <div class="mb-3">
+                    <label>Damage</label>
+                    <p>
+                        @Html.EditorFor(model => model.Player.DamageDieMultiplier, new { htmlAttributes = new { size = "3", value = 1 } })
+                        d
+                        @Html.EditorFor(model => model.Player.DamageDieSides, new { htmlAttributes = new { size = "3", value = 6 } })
+                        +
+                        @Html.EditorFor(model => model.Player.DamageModifier, new { htmlAttributes = new { size = "3" } })
+                    </p>
+                    @Html.Validation(model => model.Player.DamageDieMultiplier)
+                    @Html.Validation(model => model.Player.DamageDieSides)
+                    @Html.Validation(model => model.Player.DamageModifier)
+                </div>
+            </div>
+            <div class="card-footer text-end">
+                <button type="submit" class="btn btn-primary text-end">Fight!</button>
+            </div>
+        </form>
+    </div>
+    @if (Model.Monster != null)
+    {
+        <h1 class="align-self-center m-5">VS</h1>
+        <div class="card">
+            <div class="card-header">
+                <h3>Monster</h3>
+            </div>
+            <div class="card-body character-form">
+                <div class="mb-3">
+                    @(Model.Monster!.Name) - HP @(Model.Monster!.HitPoints) / AC @(Model.Monster!.ArmorClass)
+                </div>
+                <div class="mb-3">
+                    Attack: (1d20 + @(Model.Monster!.AttackModifier)) × @(Model.Monster.AttacksPerRound) / Damage: @(Model.Monster!.DamageDieMultiplier)d<!---->@(Model.Monster!.DamageDieSides) + @(Model.Monster!.DamageModifier)
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (Model.ResolvedEncounter != null)
+{
+    <div class="card text-center">
+        <div class="card-header">
+            @if (Model.ResolvedEncounter.Won)
+            {
+                <h1>You won!</h1>
+            }
+            else
+            {
+                <h1>You lost!</h1>
+            }
+            <h3 class="mb-3">Encounter log</h3>
+        </div>
+        <div class="card-body">
+            @foreach (var round in Model.ResolvedEncounter.Rounds)
+            {
+                <h3>Round @(round.Number)</h3>
+                <div>
+                    @foreach (var turn in round.Turns)
+                    {
+                        <h4>@turn.Creature.Name's turn!</h4>
+                        <div class="text-start">
+                            @foreach (var attack in turn.Attacks)
+                            {
+                                <p>@attack.Attacker.Name (@attack.Attacker.HitPoints HP) attacks @attack.Target.Name (@attack.Target.HitPoints HP)!</p>
+                                <p>
+                                    1d20 + @attack.Attacker.AttackModifier = @attack.AttackDiceRoll + @attack.Attacker.AttackModifier =
+                                    @(attack.AttackDiceRoll + attack.Attacker.AttackModifier)
+                                </p>
+                                <h5>
+                                    @if (attack.IsCritical)
+                                    {
+                                        <span>Critical </span>
+                                    }
+                                    @if (attack.IsHit)
+                                    {
+                                        <span>Hit!</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Miss!</span>
+                                    }
+                                </h5>
+                                @if (attack.IsHit)
+                                {
+                                    if (attack.IsCritical)
+                                    {
+                                        <p>@attack.Attacker.Name rolls critical damage!</p>
+                                        <p>
+                                            @attack.Target.Name takes
+                                            @(attack.Attacker.DamageDieMultiplier * 2)<!-- 
+                                            -->d<!-- -->@attack.Attacker.DamageDieSides + @attack.Attacker.DamageModifier
+                                            = @attack.DamageDiceRoll + @attack.Attacker.DamageModifier =
+                                            @(attack.DamageDiceRoll + attack.Attacker.DamageModifier)
+                                        </p>
+                                    }
+                                    else
+                                    {
+                                        <p>@attack.Attacker.Name rolls damage!</p>
+                                        <p>
+                                            @attack.Attacker.DamageDieMultiplier<!-- 
+                                            -->d<!-- -->@attack.Attacker.DamageDieSides + @attack.Attacker.DamageModifier
+                                            = @attack.DamageDiceRoll + @attack.Attacker.DamageModifier =
+                                            @(attack.DamageDiceRoll + attack.Attacker.DamageModifier)
+                                        </p>
+                                    }
+                                    <b>@attack.Target.Name takes @(attack.DamageDiceRoll + attack.Attacker.DamageModifier) damage! HP is down to @(attack.Target.HitPoints - attack.DamageDiceRoll - attack.Attacker.DamageModifier)!</b>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+                <hr/>
+            }
+        </div>
+    </div>
+}
