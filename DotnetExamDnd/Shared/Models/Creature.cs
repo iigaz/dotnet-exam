@@ -4,6 +4,7 @@ namespace Shared.Models;
 
 public class Creature
 {
+    [RegularExpression(@"(\w+\W*)+", ErrorMessage = "A name must consist of one or more words")]
     public string Name { get; set; } = string.Empty;
 
     [Range(0, 999, ErrorMessage = "A creature can have no less than 0 and no more than 999 HP.")]
